@@ -1,0 +1,90 @@
+*{
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+  }
+  
+  body{
+    background-color: #091921;  
+    font-family: arial, sans-serif;    
+    min-height: 100vh;
+  }
+
+  .title{      
+    font-size: 30px;        
+    color: rgb(255, 0, 200);
+    margin-top: 15px;    
+  }
+ 
+  .btn{
+    margin-top: 0px;
+    font-size: 20px;
+    padding: 10px;  
+    color: greenyellow;    
+    background-color: transparent;
+    border-style: hidden;
+    transition: 0.2s;
+ }
+
+  .btn:hover{    
+    color: rgb(94, 93, 93);
+    background: greenyellow;
+    box-shadow: 0 0 10px greenyellow, 0 0 40px greenyellow, 0 0 80px greenyellow ;
+    box-shadow: 0 0 80px greenyellow;   
+    cursor: pointer;    
+  }
+
+  .logo{
+      width: 100px;
+      height: 100px;
+  }
+
+
+  .general_div{
+    position: relative;         
+    display: flex; 
+    flex-direction: column;    
+    align-items: center;      
+    
+  } 
+
+
+  .app_frame{
+    margin-top: 20px;
+    margin-bottom: 20px;
+    position: relative;  
+    width: max-content;       
+    display: flex; 
+    flex-direction: column;      
+    align-items: center;    
+  } 
+
+
+
+
+  /* ***************************************** MEDIA QUERIES **************************************************** */
+@media only screen and (min-width: 1366px) and (max-width: 1517px) {}
+
+
+@media only screen and (min-width: 1800px) and (max-width: 1920px) {
+    .title{      
+        font-size: 70px;                
+        margin-top: 15px;    
+      }
+    
+      .message{      
+        font-size: 30px;                
+        margin-top: 15px;     
+      }
+    
+      #download_button{
+        margin-top: 15px;
+        font-size: 35px;       
+     }
+
+     #logo{
+        width: 256px;
+        height: 256px;
+  
+    }
+}
