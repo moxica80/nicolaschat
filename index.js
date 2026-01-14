@@ -3,7 +3,7 @@ var btn_my_spot = document.querySelector("#my_spot_btn");
 
 btn_chat.addEventListener("click", ()=>{      
     const a = document.createElement("a");
-    a.href = "https://drive.google.com/uc?export=download&id=1gimXMBjEQM_rDz-RNtnmyzYofi4uYHcm";
+    a.href = "https://drive.google.com/uc?export=download&id=18v0pOknIRCUI8dqHkoRvUGQ0iiRQwCFX";
     a.setAttribute("download", "chat-app.png");
     a.click();
     a.remove();
