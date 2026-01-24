@@ -1,24 +1,17 @@
 {
-  "name": "glitch-hello-node",
-  "version": "0.0.1",
-  "description": "A simple chat Application",
+  "name": "nickolaschat",
+  "version": "1.0.0",
+  "description": "Chat-Apllication",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "websocket": "^1.0.35",
     "express": "^4.18.2",
     "express-fileupload": "^1.5.2",
-    "multer": "^2.0.2"
-  },
-  "engines": {
-    "node": "12.x"
-  },  
-  "license": "MIT",
-  "keywords": [
-    "node",
-    "glitch",
-    "express"
-  ]
+    "multer": "^2.0.2",
+    "websocket": "^1.0.35"
+  }
 }
