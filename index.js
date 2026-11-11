@@ -3,7 +3,7 @@ var btn_my_spot = document.querySelector("#my_spot_btn");
 
 btn_chat.addEventListener("click", ()=>{      
     const a = document.createElement("a");
-    a.href = "https://drive.google.com/uc?export=download&id=18v0pOknIRCUI8dqHkoRvUGQ0iiRQwCFX";
+    a.href = "https://github.com/moxica80/nicolaschat/releases/download/v3.0/chat_app_3.0.apk";
     a.setAttribute("download", "chat-app.png");
     a.click();
     a.remove();
