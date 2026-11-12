@@ -6,17 +6,30 @@ const fs = require('fs');
 const multer  = require('multer');
 const {Readable} = require('stream');
 
-const port = process.env.port || 3000;
+const port = process.env.PORT || 3000;
 var doubleNameCouter = 0;
-const connections = [];
+var clients = new Map();
 const connected_names = [];
-const avatars = {};
 var serverObject = {};
-const VERSION = "2.0";
-const UPDATE_URL = ""
+const VERSION = "3.1";
+const UPDATE_URL = "https://github.com/moxica80/nicolaschat/releases/download/v3.0/chat_app_3.0.apk"
+
+
+function timeStamp(){
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const hours = String(today.getHours()).padStart(2, '0');
+    const minutes = String(today.getMinutes()).padStart(2, '0');
+    const seconds = String(today.getSeconds()).padStart(2, '0');
+    const dateTime = `${day}/${month}/${year} ${hours}:${minutes}`;
+    return dateTime;    
+}
+
 
 var server = app.listen(port, ()=>{    
-    console.log("Server Listen on port", port);
+    console.log("Server Listen on port", port + " " + timeStamp());
 });
 
 app.use(express.static("public"));
@@ -32,26 +45,40 @@ app.use(function(req, res, next) {
     next();
 });
 
+
 app.get("/", (request, response) => {
     response 
    .status(200)
    .sendFile(path.join(__dirname, "public", "index.html"));
- 
+    
+});
+
+app.post("/check_version", (req, res) =>{
+    let checkedName = req.body.myName;    
+    if(clients.size > 0){        
+        clients.forEach((connectionData, user) =>{
+            if(user == checkedName){
+                doubleNameCouter = Math.floor(Math.random() * 100) + 1;
+                checkedName = checkedName + doubleNameCouter;
+                console.log("User name renamed to " + checkedName);  
+            }
+        });
+    }        
+    let responeJson = {LTS_version: VERSION, update_url: UPDATE_URL, nickName: checkedName};    
+    res.json(responeJson);    
 });
 
 app.post("/set_my_avatar", (req, res) => {     
-    if(req.files){                         
-        console.log(req.files[0].originalname +  " set avatar");
-        avatars[req.files[0].originalname] = req.files[0].buffer;    
+    if(req.files){                                
+        clients.get(req.files[0].originalname).avatar = req.files[0].buffer;              
         res.send("Set Avatar done " + req.files[0].originalname);
     }else{
         res.send("Set avatar failed...");
     }  
 });  
 
-app.post("/get_user_avatar", (req, res) => {             
-    console.log(req.body.fromUser + " request avatar for " + req.body.name);
-    let buffer = avatars[req.body.name];    
+app.post("/get_user_avatar", (req, res) => {                 
+    let buffer = clients.get(req.body.name).avatar;    
     res.send(buffer);   
 });
 
@@ -66,94 +93,82 @@ wsServer.on("request", (req) => {
     const connection = req.accept();    
     connection.on("message", (mes) => {      
         var userJson = JSON.parse(mes.utf8Data);
-        switch (userJson.code) {
-            case 100://Fake message
-                //console.log("Fake message from " + userJson.client);
-                break;       
-
-            case 7: // User set name
-                console.log("Check Double Name: " + userJson.fromUser)
-                connected_names.forEach(name =>{
-                    if(name == userJson.fromUser){                    
-                        doubleNameCouter++;
-                        userJson.fromUser = userJson.fromUser + doubleNameCouter;
-                        console.log("Rename to " + userJson.fromUser);                   
-                    }
-
-                });
-                var specialserverObject = {code: 7, fromUser: userJson.fromUser};
-                connection.sendUTF(JSON.stringify(specialserverObject));
-                break;  
-
-            case 4: // new user connected            
-                connections.push(connection);
-                connected_names.push(userJson.fromUser);                                
-                console.log(userJson.fromUser + " Connected...");           
-                serverObject = {code: 4, fromUser: userJson.fromUser, usersList: connected_names};
-                connections.forEach((element) => {
-                    element.sendUTF(JSON.stringify(serverObject));
-                });
+        switch (userJson.code) {            
+            case 10: // new user connected
+                clients.set(userJson.fromUser, {socket: connection, avatar: null});                                           
+                console.log(userJson.fromUser + " Connected " +  timeStamp());           
+                let connectedUserNames = "";
+                connected_names.length = 0;
+                clients.forEach((connectionData, user) => {
+                    connected_names.push(user);
+                });                
+                serverObject = {code: 10, fromUser: userJson.fromUser, usersList: connected_names};                
+                clients.forEach((conectionData, user) =>{
+                    conectionData.socket.sendUTF(JSON.stringify(serverObject));                    
+                });        
                 break;    
 
-             case 1: //message
-                connections.forEach((element) => {
-                    if (element != connection) {
-                        element.sendUTF(mes.utf8Data);
+             case 30: //message
+                clients.forEach((connectionData, user) =>{
+                    if(connectionData.socket != connection){
+                        connectionData.socket.sendUTF(mes.utf8Data)
                     }
                 });
                 break;
 
-            case 6: //Private message
-                connections[connected_names.indexOf(userJson.toUser)].sendUTF(mes.utf8Data);
+            case 40: //Private message
+                clients.get(userJson.toUser).socket.sendUTF(mes.utf8Data);                
                 break;
 
-            case 3: //photo received
+            case 50: //photo received
                 if (!userJson.private) {
-                connections.forEach((element) => {
-                    if (element != connection) {
-                        element.sendUTF(mes.utf8Data);
+                    clients.forEach((connectionData, user) =>{
+                    if(connectionData.socket != connection){
+                        connectionData.socket.sendUTF(mes.utf8Data)
                     }
-                });
+                });               
                 } else {
-                    connections[connected_names.indexOf(userJson.toUser)].sendUTF(mes.utf8Data);
+                    clients.get(userJson.toUser).socket.sendUTF(mes.utf8Data);                     
                 }
                 break;
 
-            case 10: //GPS Location
-                connections.forEach((element) => {
-                if (element != connection) {
-                    element.sendUTF(mes.utf8Data);
-                }
-                });
+            case 60: //GPS Location
+                clients.forEach((connectionData, user) =>{
+                    if(connectionData.socket != connection){
+                        connectionData.socket.sendUTF(mes.utf8Data)
+                    }
+                });                
                 break;
 
-            case 69: //Command to take photos
-                connections[connected_names.indexOf(userJson.toUser)].sendUTF(mes.utf8Data);            
+            case 70: //Command to take photos                                
+                clients.get(userJson.toUser).socket.sendUTF(mes.utf8Data);
                 break;
 
-            case 70: //Send Photos back to user
-                //console.log(userJson.message);
-                connections[connected_names.indexOf(userJson.toUser)].sendUTF(mes.utf8Data);            
-                break;       
-
-            case 650: //Version                        
-                serverObject = {code: 650, fromUser: userJson.fromUser, LTS_version: VERSION, update_url: UPDATE_URL};            
-                connection.sendUTF(JSON.stringify(serverObject));            
-                break;        
+            case 80: //Send Photos back to user
+                clients.get(userJson.toUser).socket.sendUTF(mes.utf8Data);                               
+                break;                   
         }
     });
 
-    connection.on("close", (resCode, des) => {
-        if(connections.length > 0){
-            var disconnected_name = connected_names[connections.indexOf(connection)];
-            console.log(disconnected_name + " Disconected...");        
-            delete avatars[disconnected_name];                       
-            connected_names.splice(connections.indexOf(connection), 1);
-            connections.splice(connections.indexOf(connection), 1);
-            serverObject = {code: 5, fromUser: disconnected_name, usersList: connected_names};
-            connections.forEach((element) => {
-                element.sendUTF(JSON.stringify(serverObject));
-            });
-        }        
+    connection.on("close", (resCode, des) => {        
+        var disconnected_name = "";
+        clients.forEach((connectonData, user) => {
+            if(connectonData.socket == connection){
+                disconnected_name = user;
+            }
+        });
+        clients.delete(disconnected_name);
+        console.log(disconnected_name + " Disconected "  + timeStamp() + "  Sockets online: " + clients.size);
+
+        if(clients.size > 0){
+            connected_names.length = 0;
+            clients.forEach((connectionData, user) => {
+                connected_names.push(user);
+            });  
+            serverObject = {code: 20, fromUser: disconnected_name, usersList: connected_names};
+            clients.forEach((conectionData, user) =>{
+                conectionData.socket.sendUTF(JSON.stringify(serverObject));                    
+            });           
+        }
     });
 });
